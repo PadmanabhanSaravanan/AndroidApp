@@ -39,7 +39,6 @@ jobs:
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
       run: |
         echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
-        docker tag android-app:${{ github.run_number }} ${DOCKERHUB_USERNAME}/android-app:${{ github.run_number }}
         docker push padmanabhan1/android-app:1.0
 
   release:
