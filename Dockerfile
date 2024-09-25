@@ -1,37 +1,20 @@
-# Use the official Gradle image as the base image
+# Stage 1: Build the application using Gradle
 FROM gradle:7.6.0-jdk11 AS build
-
-# Set the working directory
-WORKDIR /app
-
-# Copy Gradle wrapper and build scripts
-COPY gradlew gradlew
-COPY gradle gradle
-COPY build.gradle settings.gradle /app/
-
-# Grant execute permissions to the Gradle wrapper
-RUN chmod +x gradlew
-
-# Download Gradle dependencies
-RUN ./gradlew --no-daemon dependencies
-
-# Copy the complete source code
-COPY . .
+WORKDIR /home/gradle/project
+COPY --chown=gradle:gradle . .
 
 # Build the application
-RUN ./gradlew build -x test --no-daemon
+RUN gradle build --no-daemon
 
-# Second stage to copy the APK (Multi-stage build)
-FROM openjdk:11-jre-slim AS release
+# Stage 2: Create a lightweight image for running the application
+FROM openjdk:11-jre-slim
+WORKDIR /app
 
-# Set the working directory
-WORKDIR /release
+# Copy the JAR file from the build stage
+COPY --from=build /home/gradle/project/build/libs/*.jar app.jar
 
-# Copy the built APK from the previous stage
-COPY --from=build /app/app/build/outputs/apk/ ./apk/
+# Expose the port your application runs on
+EXPOSE 8080
 
-# Display APKs in the output directory
-RUN ls -R ./apk/
-
-# This image does nothing when run
-CMD echo "APK build complete. Find APKs in the ./apk directory."
+# Command to run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
